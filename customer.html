@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>كشف حسابي</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+    <div class="container" style="max-width: 600px;">
+        
+        <button id="installAppBtn" class="btn btn-primary full-width hidden mb-2">📲 تثبيت التطبيق على هاتفك</button>
+
+        <div id="cust-login" class="card glass center-text mt-2 gsap-target">
+            <h2>👤 كشف الحساب</h2>
+            <p>أدخل كلمة المرور لعرض ديونك</p>
+            <input type="password" id="custPassInput" placeholder="كلمة المرور" class="gsap-input">
+            <button class="btn btn-success full-width gsap-btn" onclick="verifyCustomer()">دخول</button>
+            <p id="msg" style="color:salmon;"></p>
+        </div>
+
+        <div id="cust-view" class="hidden">
+            <div id="paymentAlert" class="alert-box hidden">
+                <strong>⚠️ تنبيه:</strong> يرجى مراجعة المتجر لتسديد المستحقات.
+            </div>
+
+            <div class="card glass center-text gsap-target" style="border-top: 5px solid var(--primary);">
+                <h2 id="cName">...</h2>
+                <small>الرصيد الحالي</small>
+                <div class="balance-display" id="cBalance" style="color: var(--danger)">0.00</div>
+            </div>
+
+            <a id="financeWaLink" href="#" target="_blank" class="btn btn-success full-width mb-2 gsap-btn">
+                💬 تواصل مع القسم المالي (واتساب)
+            </a>
+
+            <div class="card glass gsap-target">
+                <h3>سجل الحركات</h3>
+                <div id="cTransList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="customer.js"></script>
+    <script src="pwa.js"></script>
+</body>
+</html>
