@@ -11,12 +11,18 @@
 <body>
     <div class="container" style="max-width: 600px;">
         
-        <button id="installAppBtn" class="btn btn-primary full-width hidden mb-2">📲 تثبيت التطبيق على هاتفك</button>
+        <button id="installAppBtn" class="btn btn-primary full-width hidden mb-2">📲 تثبيت التطبيق</button>
 
         <div id="cust-login" class="card glass center-text mt-2 gsap-target">
             <h2>👤 كشف الحساب</h2>
             <p>أدخل كلمة المرور لعرض ديونك</p>
             <input type="password" id="custPassInput" placeholder="كلمة المرور" class="gsap-input">
+            
+            <div class="flex center-flex mb-2" style="justify-content: center;">
+                <input type="checkbox" id="rememberMe" style="width: auto; margin: 0 0 0 10px;">
+                <label for="rememberMe" style="cursor: pointer;">حفظ دخولي وتثبيت التطبيق</label>
+            </div>
+
             <button class="btn btn-success full-width gsap-btn" onclick="verifyCustomer()">دخول</button>
             <p id="msg" style="color:salmon;"></p>
         </div>
