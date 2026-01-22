@@ -68,18 +68,23 @@
                     <div class="card glass gsap-target">
                         <h3>⚙️ إعدادات المتجر</h3>
                         
-                        <label>رقم الواتساب المالي (للتواصل مع الزبائن):</label>
+                        <label>رقم الواتساب المالي:</label>
                         <div class="flex">
                             <input type="text" id="storeWhatsapp" placeholder="9647700000000" class="gsap-input">
-                            <button class="btn btn-primary gsap-btn" onclick="saveStoreSettings()">حفظ الرقم</button>
+                            <button class="btn btn-primary gsap-btn" onclick="saveStoreSettings()">حفظ</button>
                         </div>
-                        <small style="color:#666">سيظهر هذا الرقم في زر "تواصل مع المالية" لدى الزبون.</small>
+                        <hr>
+                        
+                        <h4>💾 النسخ الاحتياطي</h4>
+                        <button class="btn btn-primary full-width mb-2 gsap-btn" onclick="downloadBackup()">📥 تحميل نسخة احتياطية</button>
+                        <button class="btn btn-warning full-width gsap-btn" onclick="document.getElementById('backupFile').click()">📤 استعادة نسخة محفوظة</button>
+                        <input type="file" id="backupFile" class="hidden" onchange="restoreBackup(this)">
                         <hr>
 
                         <h4>🔐 تغيير كلمة المرور</h4>
-                        <input type="password" id="oldPass" placeholder="كلمة المرور الحالية" class="gsap-input">
-                        <input type="password" id="newPass" placeholder="كلمة المرور الجديدة" class="gsap-input">
-                        <input type="password" id="confirmPass" placeholder="تأكيد كلمة المرور" class="gsap-input">
+                        <input type="password" id="oldPass" placeholder="الحالية" class="gsap-input">
+                        <input type="password" id="newPass" placeholder="الجديدة" class="gsap-input">
+                        <input type="password" id="confirmPass" placeholder="تأكيد" class="gsap-input">
                         <button class="btn btn-danger full-width gsap-btn" onclick="changeAdminPassReal()">تغيير وتسجيل خروج</button>
                         
                         <hr>
