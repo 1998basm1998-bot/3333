@@ -5,17 +5,15 @@ import { firebaseConfig, hashPass } from './config.js';
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// استخراج ID من الرابط
 const urlParams = new URLSearchParams(window.location.search);
 const custId = urlParams.get('id');
 
-// التحقق من الدخول المحفوظ
 window.onload = async () => {
+    // التحقق التلقائي يعمل فقط إذا كان المستخدم قد اختار "حفظ الدخول" سابقاً
     if(localStorage.getItem(`cust_login_${custId}`)) {
         verifyCustomer(true);
     }
     
-    // جلب رقم الواتساب
     try {
         const settingsSnap = await getDoc(doc(db, "settings", "info"));
         if(settingsSnap.exists() && settingsSnap.data().whatsapp) {
@@ -31,6 +29,7 @@ window.onload = async () => {
 
 window.verifyCustomer = async function(isAuto = false) {
     const passInput = document.getElementById('custPassInput').value;
+    const rememberMe = document.getElementById('rememberMe').checked; // حالة مربع الاختيار
     const msg = document.getElementById('msg');
     
     msg.innerText = "جاري التحقق...";
@@ -47,19 +46,22 @@ window.verifyCustomer = async function(isAuto = false) {
             return msg.innerText = "كلمة المرور خطأ";
         }
 
-        // === حفظ حالة الزبون (للتطبيق المثبت) ===
-        localStorage.setItem(`cust_login_${custId}`, 'true');
-        localStorage.setItem('app_mode', 'customer'); // هذا السطر هو مفتاح الحل
-        localStorage.setItem('my_id', custId);
+        // === التعديل هنا: الحفظ المشروط ===
+        if (rememberMe || isAuto) {
+            localStorage.setItem(`cust_login_${custId}`, 'true'); // للدخول التلقائي
+            localStorage.setItem('app_mode', 'customer');         // لتفعيل PWA والتوجيه
+            localStorage.setItem('my_id', custId);
+        } else {
+            // إذا لم يختر الحفظ، لا نحفظ شيئاً يخص التوجيه
+            // هذا يسمح للمدير بالدخول مرة واحدة دون أن يعلق
+        }
 
-        // عرض البيانات
         document.getElementById('cust-login').classList.add('hidden');
         document.getElementById('cust-view').classList.remove('hidden');
         gsap.from("#cust-view", { opacity: 0, scale: 0.9 });
 
         document.getElementById('cName').innerText = data.name;
 
-        // جلب العمليات
         const transQ = query(collection(db, "transactions"), where("customerId", "==", custId));
         const transSnap = await getDocs(transQ);
         const trans = transSnap.docs.map(d => d.data());
@@ -72,7 +74,6 @@ window.verifyCustomer = async function(isAuto = false) {
 
         document.getElementById('cBalance').innerText = balance.toLocaleString() + ' ' + (data.currency || 'IQD');
         
-        // التحقق من التنبيهات
         if(trans.length > 0 && balance > 0) {
             trans.sort((a,b)=> new Date(b.date)-new Date(a.date));
             const lastDate = trans[0].date;
