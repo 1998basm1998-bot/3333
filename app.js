@@ -1,17 +1,28 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, enableIndexedDbPersistence, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { firebaseConfig, hashPass } from './config.js';
+
+// === 1. التوجيه الذكي (لحل مشكلة فتح الأدمن للزبون) ===
+// إذا كان المستخدم زبوناً، حوله لصفحته فوراً
+if (localStorage.getItem('app_mode') === 'customer' && localStorage.getItem('my_id')) {
+    if (!window.location.href.includes('customer.html')) {
+        window.location.href = `customer.html?id=${localStorage.getItem('my_id')}`;
+    }
+}
 
 // تهيئة التطبيق
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// محاولة تفعيل الأوفلاين (بدون إيقاف التطبيق إذا فشل)
-try {
-    enableIndexedDbPersistence(db).catch((err) => {
-        console.log("Offline mode disabled:", err.code);
+// === 2. تفعيل الأوفلاين لقاعدة البيانات ===
+enableIndexedDbPersistence(db)
+    .catch((err) => {
+        if (err.code == 'failed-precondition') {
+            console.log("تعدد علامات التبويب يعيق الأوفلاين");
+        } else if (err.code == 'unimplemented') {
+            console.log("المتصفح لا يدعم الأوفلاين");
+        }
     });
-} catch (e) { console.log("Persistence error"); }
 
 let currentCustomer = null;
 let currentTransType = '';
@@ -49,6 +60,9 @@ window.checkAdminLogin = function() {
 }
 
 function unlockApp() {
+    // إذا دخل كمدير، نتأكد من إلغاء وضع الزبون
+    localStorage.removeItem('app_mode');
+    
     document.getElementById('lock-screen').style.display = 'none';
     document.getElementById('app').classList.remove('hidden');
     const storeName = localStorage.getItem('store_name');
@@ -57,14 +71,13 @@ function unlockApp() {
     initAnimations();
 }
 
-// === الدالة الرئيسية (تم تحسينها لكشف الأخطاء) ===
+// === الدالة الرئيسية ===
 async function loadDashboard() {
     try {
-        // جلب الزبائن
+        // نستخدم snapshot لجلب البيانات سواء أونلاين أو أوفلاين
         const custSnapshot = await getDocs(collection(db, "customers"));
         allCustomers = custSnapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
         
-        // جلب العمليات
         const transSnapshot = await getDocs(collection(db, "transactions"));
         const transactions = transSnapshot.docs.map(doc => ({ firebaseId: doc.id, ...doc.data() }));
 
@@ -82,13 +95,11 @@ async function loadDashboard() {
                 if (t.type === 'payment') c.balance -= amt;
             });
             
-            // حساب التنبيهات
             if(myTrans.length > 0 && c.balance > 0) {
                 myTrans.sort((a,b) => new Date(b.date) - new Date(a.date));
                 c.lastDate = myTrans[0].date;
                 
                 const lastTransDate = new Date(c.lastDate);
-                // التحقق من صحة التاريخ
                 if(!isNaN(lastTransDate)) {
                     const diffTime = Math.abs(now - lastTransDate);
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
@@ -116,8 +127,10 @@ async function loadDashboard() {
 
     } catch (error) {
         console.error(error);
-        alert("حدث خطأ أثناء تحميل البيانات:\n" + error.message);
-        document.getElementById('customersList').innerHTML = `<p style="color:red">حدث خطأ: ${error.message}</p>`;
+        // في حالة الأوفلاين الشديد، قد يظهر هذا الخطأ إذا لم تكن البيانات مخزنة مسبقاً
+        if(navigator.onLine) {
+            alert("حدث خطأ في الاتصال: " + error.message);
+        }
     }
 }
 
@@ -126,7 +139,7 @@ function renderCustomersList(customers) {
     list.innerHTML = '';
     
     if(customers.length === 0) {
-        list.innerHTML = '<p style="text-align:center">لا يوجد زبائن حالياً</p>';
+        list.innerHTML = '<p style="text-align:center">لا يوجد بيانات</p>';
         return;
     }
 
@@ -136,7 +149,6 @@ function renderCustomersList(customers) {
         div.style.cursor = 'pointer';
         div.onclick = () => openCustomer(c.id);
         
-        // أيقونة التنبيه
         let alertIcon = c.isOverdue ? '⚠️' : '';
         let balanceColor = c.balance > 0 ? 'var(--danger)' : 'var(--accent)';
 
@@ -185,7 +197,7 @@ function renderNotifications(list) {
     }
 }
 
-// === إضافة زبون ===
+// === بقية الدوال (إضافة، فتح، حفظ) ===
 window.addCustomer = async function() {
     const name = document.getElementById('newCustName').value;
     const phone = document.getElementById('newCustPhone').value;
@@ -207,14 +219,13 @@ window.addCustomer = async function() {
     } catch (e) { alert("خطأ: " + e.message); }
 }
 
-// === فتح زبون ===
 window.openCustomer = async function(id) {
     const customer = allCustomers.find(c => c.id == id);
     if (!customer) return;
     currentCustomer = customer;
     
-    // جلب حركات الزبون فقط
     const q = query(collection(db, "transactions"), where("customerId", "==", id));
+    // getDocs تدعم الأوفلاين تلقائياً الآن
     const snap = await getDocs(q);
     const trans = snap.docs.map(d => ({firebaseId: d.id, ...d.data()}));
     trans.sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -229,7 +240,6 @@ window.openCustomer = async function(id) {
     renderTransactions(trans, customer.currency);
 }
 
-// === العمليات المساعدة ===
 window.formatCurrency = function(n, c) {
     const num = parseFloat(n) || 0;
     return c === 'USD' ? `$${num.toLocaleString()}` : `${num.toLocaleString()} د.ع`;
@@ -296,7 +306,7 @@ function renderTransactions(transactions, currency) {
     });
 }
 
-// تشغيل عند البدء
+// بدء التشغيل
 if(localStorage.getItem('admin_pass')) {
     // Already set up
 }
