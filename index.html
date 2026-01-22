@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سجل الديون الذكي</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+    <div id="lock-screen" class="glass-bg">
+        <div class="login-content gsap-target">
+            <h1 id="brand-title">🔒 الإدارة المالية</h1>
+            <div id="login-inputs">
+                <input type="text" id="storeNameInput" placeholder="اسم المتجر" class="gsap-input">
+                <input type="password" id="adminPassInput" placeholder="كلمة المرور" class="gsap-input">
+                <button class="btn btn-success full-width gsap-btn" onclick="checkAdminLogin()">دخول للنظام</button>
+            </div>
+            <h1 id="welcome-brand" class="hidden"></h1>
+            <p id="loginMsg" style="color: salmon; margin-top: 10px;"></p>
+        </div>
+    </div>
+
+    <div id="app" class="hidden">
+        <div class="content-area">
+            
+            <div id="tab-dashboard" class="tab-content active-tab">
+                <header class="card glass flex flex-between no-print gsap-target">
+                    <h3 id="headerStoreName">سجل الديون</h3>
+                    <button class="btn btn-sm btn-danger gsap-btn" onclick="logout()">خروج</button>
+                </header>
+
+                <div class="container">
+                    <div class="card glass flex flex-between gsap-target">
+                        <div>
+                            <small>إجمالي الديون</small>
+                            <h2 style="color: var(--danger)" id="totalDebt">...</h2>
+                        </div>
+                        <div>
+                            <small>الزبائن</small>
+                            <h3 id="customerCount">...</h3>
+                        </div>
+                    </div>
+
+                    <div class="flex mb-2 gsap-target">
+                        <input type="text" id="searchInput" placeholder="🔍 بحث..." onkeyup="filterCustomers()" class="gsap-input">
+                        <button class="btn btn-success gsap-btn" onclick="showModal('modal-add-customer')">+ زبون</button>
+                    </div>
+
+                    <div id="customersList">
+                        <p style="text-align:center;">جاري المزامنة...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-notifications" class="tab-content hidden">
+                <div class="container mt-2">
+                    <h3 class="gsap-target">🔔 تنبيهات الاستحقاق</h3>
+                    <div id="alertsList" class="gsap-target">
+                        <p style="text-align:center; color:#777">لا توجد ديون مستحقة اليوم</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-settings" class="tab-content hidden">
+                <div class="container mt-2">
+                    <div class="card glass gsap-target">
+                        <h3>⚙️ إعدادات المتجر</h3>
+                        
+                        <label>رقم الواتساب المالي (للتواصل مع الزبائن):</label>
+                        <div class="flex">
+                            <input type="text" id="storeWhatsapp" placeholder="9647700000000" class="gsap-input">
+                            <button class="btn btn-primary gsap-btn" onclick="saveStoreSettings()">حفظ الرقم</button>
+                        </div>
+                        <small style="color:#666">سيظهر هذا الرقم في زر "تواصل مع المالية" لدى الزبون.</small>
+                        <hr>
+
+                        <h4>🔐 تغيير كلمة المرور</h4>
+                        <input type="password" id="oldPass" placeholder="كلمة المرور الحالية" class="gsap-input">
+                        <input type="password" id="newPass" placeholder="كلمة المرور الجديدة" class="gsap-input">
+                        <input type="password" id="confirmPass" placeholder="تأكيد كلمة المرور" class="gsap-input">
+                        <button class="btn btn-danger full-width gsap-btn" onclick="changeAdminPassReal()">تغيير وتسجيل خروج</button>
+                        
+                        <hr>
+                        <p style="text-align:center">حالة الاتصال: <span id="onlineStatus">متصل 🟢</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-customer" class="hidden glass-overlay">
+                <div class="container">
+                    <button class="btn btn-sm btn-primary no-print mb-2 gsap-btn" onclick="goHome()">🔙 رجوع</button>
+                    <div class="card glass center-text gsap-target">
+                        <h2 id="custName">...</h2>
+                        <div class="balance-display" id="custBalance">0.00</div>
+                        
+                        <div class="flex flex-between no-print center-flex">
+                            <button class="btn btn-danger gsap-btn" onclick="openTransModal('debt')">➕ دين</button>
+                            <button class="btn btn-success gsap-btn" onclick="openTransModal('payment')">💰 تسديد</button>
+                            <button class="btn btn-primary gsap-btn" onclick="openTransModal('sale')">🛒 فاتورة</button>
+                        </div>
+                        
+                        <div class="mt-2 no-print link-box">
+                            <small>رابط كشف الحساب:</small>
+                            <div class="flex">
+                                <input type="text" id="custLink" readonly onclick="this.select()" class="gsap-input">
+                                <button class="btn btn-sm btn-primary gsap-btn" onclick="copyLink()">نسخ</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card glass gsap-target">
+                        <div class="flex flex-between">
+                            <h3>سجل العمليات</h3>
+                            <button class="btn btn-sm btn-primary no-print gsap-btn" onclick="window.print()">🖨️</button>
+                        </div>
+                        <div id="transactionsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav glass no-print">
+            <button class="nav-item active gsap-btn" onclick="switchTab('tab-dashboard', this)">
+                <span>🏠</span> <small>الرئيسية</small>
+            </button>
+            <button class="nav-item gsap-btn" onclick="switchTab('tab-notifications', this)">
+                <span>🔔</span> <small>التنبيهات</small>
+                <div id="badge-alert" class="nav-badge hidden"></div>
+            </button>
+            <button class="nav-item gsap-btn" onclick="switchTab('tab-settings', this)">
+                <span>⚙️</span> <small>الإعدادات</small>
+            </button>
+        </nav>
+    </div>
+
+    <div id="modal-add-customer" class="modal hidden">
+        <div class="card glass modal-content gsap-target">
+            <h3>زبون جديد</h3>
+            <input type="text" id="newCustName" placeholder="الاسم الكامل" class="gsap-input">
+            <input type="tel" id="newCustPhone" placeholder="رقم الهاتف" class="gsap-input">
+            
+            <div class="flex">
+                <div style="flex:1">
+                    <label>العملة:</label>
+                    <select id="newCustCurrency" class="gsap-input">
+                        <option value="IQD">دينار (IQD)</option>
+                        <option value="USD">دولار ($)</option>
+                    </select>
+                </div>
+                <div style="flex:1">
+                    <label>تنبيه بعد (يوم):</label>
+                    <input type="number" id="newCustReminder" value="30" class="gsap-input">
+                </div>
+            </div>
+
+            <input type="password" id="newCustPass" placeholder="كلمة سر الزبون (اختياري)" class="gsap-input">
+            <div class="flex flex-between">
+                <button class="btn btn-danger gsap-btn" onclick="closeModal('modal-add-customer')">إلغاء</button>
+                <button class="btn btn-success gsap-btn" onclick="addCustomer()">حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-transaction" class="modal hidden">
+        <div class="card glass modal-content gsap-target">
+            <h3 id="transTitle">عملية جديدة</h3>
+            <input type="text" id="transItem" placeholder="المادة (اختياري)" class="gsap-input">
+            <input type="number" id="transAmount" placeholder="المبلغ" class="gsap-input">
+            <textarea id="transNote" placeholder="ملاحظات" class="gsap-input"></textarea>
+            <input type="date" id="transDate" class="gsap-input">
+            <div class="flex flex-between">
+                <button class="btn btn-danger gsap-btn" onclick="closeModal('modal-transaction')">إلغاء</button>
+                <button class="btn btn-success gsap-btn" onclick="saveTransaction()">حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+    <script src="pwa.js"></script>
+</body>
+</html>
